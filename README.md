@@ -22,7 +22,7 @@ Emoji Cipher takes your text, runs it through **two layers of classical encrypti
 
 1. **Clone it** (or just download the HTML file)
    ```bash
-   git clone https://github.com/YOUR-USERNAME/emoji-cipher.git
+   git clone https://github.com/jishnuthacker/emoji-cipher.git
    ```
 
 2. **Open `index.html`** in any browser. That's it. No server, no npm, no build step.
