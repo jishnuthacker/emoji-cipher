@@ -84,8 +84,7 @@ YOUR TEXT
 ```
 📦 emoji-cipher
 ├── 🌐 index.html          ← The entire app (open this)
-├── 🧮 IS_PROJECT.m        ← MATLAB version (Vigenère only)
-├── 🧮 with_playfair.m     ← MATLAB version (Vigenère + Playfair)
+├── 🧮 emoji_cipher.m      ← MATLAB reference implementation
 └── 📖 README.md           ← You're reading it
 ```
 
