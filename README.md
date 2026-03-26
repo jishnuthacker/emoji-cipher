@@ -4,6 +4,8 @@
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-7c3aed?style=for-the-badge&logo=googlechrome&logoColor=white)](https://jishnuthacker.github.io/emoji-cipher/)
 
+
+
 ---
 
 ## 💡 What is this?
