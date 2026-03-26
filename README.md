@@ -3,7 +3,7 @@
 **Send secret messages that look like random emojis.** Your friends won't know what hit them — and neither will anyone snooping. 😏
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-7c3aed?style=for-the-badge&logo=googlechrome&logoColor=white)](https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/)
-[![Made with JS](https://img.shields.io/badge/Pure_JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](#)
+
 
 ---
 
