@@ -1,6 +1,6 @@
 # 🔐 Emoji Cipher
 
-**Send secret messages that look like random emojis.** Your friends won't know what hit them — and neither will anyone snooping. 😏
+**Send secret messages that look like random emojis.** Your friends won't know what hit them and neither will anyone snooping. 😏
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-7c3aed?style=for-the-badge&logo=googlechrome&logoColor=white)](https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/)
 
@@ -66,7 +66,7 @@ YOUR TEXT
    😀 😁 🤣 😃 ...
 ```
 
-**Decryption** reverses the whole pipeline. The magic header is checked at the end — if it doesn't match, you entered the wrong key. Simple.
+**Decryption** reverses the whole pipeline. The magic header is checked at the end if it doesn't match, you entered the wrong key. Simple.
 
 ---
 
@@ -104,16 +104,16 @@ But it won't protect you from the NSA. For that, use Signal. 😂
 
 ## 🚀 Tech
 
-- **Zero dependencies** — pure HTML, CSS, JavaScript
-- **No backend** — everything runs in your browser
-- **No data leaves your device** — literally nothing is sent anywhere
+- **Zero dependencies** -pure HTML, CSS, JavaScript
+- **No backend** - everything runs in your browser
+- **No data leaves your device** - literally nothing is sent anywhere
 - Works offline once the fonts load
 
 ---
 
 ## 📄 License
 
-MIT — do whatever you want with it.
+MIT - do whatever you want with it.
 
 ---
 
