@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Cipher — Encrypt &amp; Decrypt</title>
+    <meta name="description"
+        content="Transform your messages into encrypted emojis with a dual-layer Vigenère + Playfair cipher engine.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-body: #101014;
+            --bg-card: #18181b;
+            --bg-input: #09090b;
+            --bg-elevated: #27272a;
+            --border: #2e2e33;
+            --border-focus: #7c3aed;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --accent-soft: rgba(124, 58, 237, 0.12);
+            --success: #22c55e;
+            --error: #ef4444;
+            --error-soft: rgba(239, 68, 68, 0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 32px 16px 64px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Subtle top gradient wash */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(124, 58, 237, 0.08), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== CONTAINER ===== */
+        .app {
+            width: 100%;
+            max-width: 560px;
+            position: relative;
+            z-index: 1;
+            animation: enter 0.5s ease-out;
+        }
+
+        @keyframes enter {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px 28px;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 24px 18px;
+            }
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header-icon {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* ===== DIVIDER ===== */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 24px 0;
+        }
+
+        /* ===== MODE TOGGLE ===== */
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+            margin-bottom: 24px;
+        }
+
+        .mode-toggle input[type="radio"] {
+            display: none;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: var(--transition);
+            user-select: none;
+        }
+
+        .mode-btn:hover {
+            color: var(--text-secondary);
+        }
+
+        input[type="radio"]:checked+.mode-btn {
+            color: var(--text-primary);
+            background: var(--accent-soft);
+            border: 1px solid rgba(124, 58, 237, 0.25);
+        }
+
+        /* ===== FORM FIELDS ===== */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            letter-spacing: 0.2px;
+        }
+
+        .field-input,
+        .field-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+
+        .field-input::placeholder,
+        .field-textarea::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .field-input:focus,
+        .field-textarea:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .field-textarea {
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.6;
+        }
+
+        /* ===== SUPPORTED CHARS ===== */
+        .char-toggle {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 11.5px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 2px 0;
+            transition: color var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .char-toggle:hover {
+            color: var(--text-secondary);
+        }
+
+        .char-toggle .arrow {
+            display: inline-block;
+            transition: transform 0.25s ease;
+            font-size: 9px;
+        }
+
+        .char-toggle.active .arrow {
+            transform: rotate(90deg);
+        }
+
+        .char-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            border: 1px solid transparent;
+        }
+
+        .char-list.open {
+            max-height: 85px;
+            padding: 10px 14px;
+            margin-top: 8px;
+            border-color: var(--border);
+        }
+
+        /* ===== EXECUTE BUTTON ===== */
+        .execute-btn {
+            width: 100%;
+            padding: 12px 20px;
+            margin-top: 6px;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+        }
+
+        .execute-btn:hover {
+            background: #6d28d9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+        }
+
+        .execute-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* ===== OUTPUT ===== */
+        .output-section {
+            margin-top: 28px;
+        }
+
+        .output-panel {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+        }
+
+        .output-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .output-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .copy-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .copy-btn.copied {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .output-display {
+            background: var(--bg-card);
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+            min-height: 44px;
+        }
+
+        .output-display::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .output-display::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .output-display::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* ===== ERROR ===== */
+        .error-panel {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: var(--error-soft);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: var(--radius-sm);
+            color: #fca5a5;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: none;
+            animation: shake 0.35s ease;
+        }
+
+        .error-panel.visible {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-4px);
+            }
+
+            50% {
+                transform: translateX(4px);
+            }
+
+            75% {
+                transform: translateX(-2px);
+            }
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-tags {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        .footer-text {
+            font-size: 10.5px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app">
+        <div class="card">
+
+            <!-- HEADER -->
+            <header class="header">
+                <span class="header-icon">🔐</span>
+                <h1>Emoji Cipher</h1>
+                <p>Encrypt · Decode · Communicate</p>
+            </header>
+
+            <div class="divider"></div>
+
+            <!-- MODE -->
+            <div class="mode-toggle" id="mode-toggle">
+                <input type="radio" name="mode" value="1" id="modeEncrypt" checked onchange="updateLabel()">
+                <label for="modeEncrypt" class="mode-btn">🔒 Encrypt</label>
+                <input type="radio" name="mode" value="2" id="modeDecrypt" onchange="updateLabel()">
+                <label for="modeDecrypt" class="mode-btn">🔓 Decrypt</label>
+            </div>
+
+            <!-- TEXT INPUT -->
+            <div class="field">
+                <label for="textInput" id="textInputLabel" class="field-label">Message</label>
+                <textarea id="textInput" class="field-textarea" rows="4"
+                    placeholder="Enter text to encrypt…"></textarea>
+            </div>
+
+            <!-- KEY INPUT -->
+            <div class="field">
+                <label for="encryptionKey" class="field-label">Key</label>
+                <input type="text" id="encryptionKey" class="field-input" placeholder="Enter your secret key…">
+            </div>
+
+            <!-- SUPPORTED CHARS -->
+            <div class="field" style="margin-bottom: 0;">
+                <button onclick="toggleSupportedChars()" class="char-toggle" id="charToggleBtn">
+                    <span class="arrow">▶</span> Supported characters (95)
+                </button>
+                <div id="supported-chars" class="char-list"></div>
+            </div>
+
+            <!-- EXECUTE -->
+            <button onclick="runCipher()" class="execute-btn" id="execute-btn">
+                Execute
+            </button>
+
+            <div class="divider"></div>
+
+            <!-- OUTPUT -->
+            <section class="output-section">
+                <div class="output-panel">
+                    <div class="output-header">
+                        <span id="outputLabel" class="output-label">Output</span>
+                        <button class="copy-btn" id="copyBtn" onclick="copyOutput()">
+                            <span id="copyIcon">📋</span> <span id="copyText">Copy</span>
+                        </button>
+                    </div>
+                    <pre id="output-display" class="output-display">Your result will appear here.</pre>
+                </div>
+
+                <div id="error-message" class="error-panel">
+                    <span>⚠</span>
+                    <span id="error-text"></span>
+                </div>
+            </section>
+
+            <!-- FOOTER -->
+            <footer class="footer">
+                <p class="footer-text">Emoji Cipher</p>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- ===== CIPHER ENGINE ===== -->
+    <script>
+        const apiKey = "";
+
+        (function () {
+
+            // --- CONSTANTS ---
+            const MAGIC_HEADER = 'JMK@42_38_26';
+            const PLAYFAIR_KEY = 'Project';
+            const ASCII_OFFSET = 32;
+
+            const emojiList = [
+                '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😇', '😉',
+                '😊', '🙂', '🙃', '😌', '😍', '😘', '😗', '😙', '😚', '😋',
+                '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐',
+                '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😮', '🤥',
+                '🤤', '😴', '🤯', '😳', '😲', '😟', '😥', '😢', '😭', '😨',
+                '😰', '😱', '🥶', '🥵', '😠', '😡', '🤬', '😤', '🤮', '🤢',
+                '🤧', '🤒', '🤕', '🥴', '😵', '🥳', '🎊', '🎉', '🎁', '🎈',
+                '🎂', '🎀', '🎄', '🎅', '🌟', '⭐', '✨', '💫', '💖', '💘',
+                '💔', '❤', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍',
+                '🤖', '👾', '🛸', '🚀', '🪐'
+            ];
+            const M = emojiList.length;
+
+            // --- PLAYFAIR ---
+
+            function buildPlayfairMatrix() {
+                let pfk = PLAYFAIR_KEY.toUpperCase().replace(/J/g, 'I');
+                let uniq = '';
+                for (let char of pfk) {
+                    if (!uniq.includes(char) && /[A-Z]/.test(char)) uniq += char;
+                }
+                const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ';
+                for (let char of alphabet) {
+                    if (!uniq.includes(char)) uniq += char;
+                }
+                const matrix = [];
+                for (let i = 0; i < 5; i++) {
+                    matrix.push(uniq.slice(i * 5, (i + 1) * 5).split(''));
+                }
+                return matrix;
+            }
+
+            const PF_MATRIX = buildPlayfairMatrix();
+
+            function findCharCoords(char) {
+                const target = char.toUpperCase().replace('J', 'I');
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 5; c++) {
+                        if (PF_MATRIX[r][c] === target) return { r, c };
+                    }
+                }
+                return null;
+            }
+
+            function playfairCipher(text, isEncrypt) {
+                const result = text.split('');
+                const letterIndices = result
+                    .map((char, index) => ({ char, index }))
+                    .filter(item => /[a-zA-Z]/.test(item.char) && item.char.toUpperCase() !== 'J')
+                    .map(item => item.index);
+
+                for (let i = 0; i < letterIndices.length - 1; i += 2) {
+                    const idx1 = letterIndices[i];
+                    const idx2 = letterIndices[i + 1];
+                    const char1 = result[idx1];
+                    const char2 = result[idx2];
+                    const isLower1 = char1 === char1.toLowerCase();
+                    const isLower2 = char2 === char2.toLowerCase();
+                    const coords1 = findCharCoords(char1);
+                    const coords2 = findCharCoords(char2);
+                    let { r: r1, c: c1 } = coords1;
+                    let { r: r2, c: c2 } = coords2;
+                    let A2, B2;
+                    const shift = isEncrypt ? 1 : -1;
+
+                    if (r1 === r2) {
+                        c1 = (c1 + shift + 5) % 5;
+                        c2 = (c2 + shift + 5) % 5;
+                        A2 = PF_MATRIX[r1][c1];
+                        B2 = PF_MATRIX[r2][c2];
+                    } else if (c1 === c2) {
+                        r1 = (r1 + shift + 5) % 5;
+                        r2 = (r2 + shift + 5) % 5;
+                        A2 = PF_MATRIX[r1][c1];
+                        B2 = PF_MATRIX[r2][c2];
+                    } else {
+                        A2 = PF_MATRIX[r1][c2];
+                        B2 = PF_MATRIX[r2][c1];
+                    }
+
+                    result[idx1] = isLower1 ? A2.toLowerCase() : A2;
+                    result[idx2] = isLower2 ? B2.toLowerCase() : B2;
+                }
+                return result.join('');
+            }
+
+            // --- CORE LOGIC ---
+
+            function keyToOffsets(keyStr) {
+                if (!keyStr) throw new Error("Key cannot be empty.");
+                const offsets = [];
+                for (let i = 0; i < keyStr.length; i++) {
+                    const charCode = keyStr.charCodeAt(i);
+                    const offset = charCode - ASCII_OFFSET;
+                    if (offset < 0 || offset >= M) {
+                        throw new Error(`Key has invalid char: '${keyStr[i]}' (Code: ${charCode}). Use ASCII 32–126.`);
+                    }
+                    offsets.push(offset);
+                }
+                return offsets;
+            }
+
+            function textToOffsets(textStr) {
+                const offsets = [];
+                for (let i = 0; i < textStr.length; i++) {
+                    const charCode = textStr.charCodeAt(i);
+                    const offset = charCode - ASCII_OFFSET;
+                    if (offset < 0 || offset >= M) {
+                        throw new Error(`Unsupported char: '${textStr[i]}' (Code: ${charCode}). Use ASCII 32–126.`);
+                    }
+                    offsets.push(offset);
+                }
+                return offsets;
+            }
+
+            window.convertMatlabLogic = function (choice, key, textInput) {
+                const k = keyToOffsets(key);
+                const K = k.length;
+
+                if (choice === '1') {
+                    const fullPlaintext = MAGIC_HEADER + textInput;
+                    const p = textToOffsets(fullPlaintext);
+                    const N = p.length;
+                    const c_vig = [];
+                    for (let i = 0; i < N; i++) {
+                        c_vig.push((p[i] + k[i % K]) % M);
+                    }
+                    const vigOut = c_vig.map(o => String.fromCharCode(o + ASCII_OFFSET)).join('');
+                    const pfOut = playfairCipher(vigOut, true);
+                    const v = textToOffsets(pfOut);
+                    return v.map(o => emojiList[o]).join(" ");
+                }
+
+                else if (choice === '2') {
+                    const tokens = textInput.split(/\s+/).filter(t => t.length > 0);
+                    const N = tokens.length;
+                    const c_emoji = [];
+                    for (let i = 0; i < N; i++) {
+                        const offset = emojiList.indexOf(tokens[i]);
+                        if (offset === -1) {
+                            throw new Error(`Invalid emoji: '${tokens[i]}'. Check spacing or emoji list.`);
+                        }
+                        c_emoji.push(offset);
+                    }
+                    const pfIn = c_emoji.map(o => String.fromCharCode(o + ASCII_OFFSET)).join('');
+                    const vigIn = playfairCipher(pfIn, false);
+                    const p_vig = textToOffsets(vigIn);
+                    const p_final = [];
+                    for (let i = 0; i < N; i++) {
+                        p_final.push((p_vig[i] - k[i % K] + M) % M);
+                    }
+                    let plain = p_final.map(o => String.fromCharCode(o + ASCII_OFFSET)).join('');
+
+                    if (plain.startsWith(MAGIC_HEADER)) {
+                        return plain.substring(MAGIC_HEADER.length);
+                    } else {
+                        return '❌ Wrong key or corrupted message.';
+                    }
+                } else {
+                    throw new Error("Invalid choice.");
+                }
+            }
+
+            // --- UI ---
+
+            function populateSupportedChars() {
+                let chars = '';
+                for (let i = 0; i < M; i++) chars += String.fromCharCode(i + ASCII_OFFSET);
+                document.getElementById('supported-chars').textContent = chars;
+            }
+
+            window.toggleSupportedChars = function () {
+                document.getElementById('supported-chars').classList.toggle('open');
+                document.getElementById('charToggleBtn').classList.toggle('active');
+            }
+
+            window.runCipher = function () {
+                const outputDisplay = document.getElementById('output-display');
+                const errorPanel = document.getElementById('error-message');
+                const errorText = document.getElementById('error-text');
+                const outputLabel = document.getElementById('outputLabel');
+                const copyBtn = document.getElementById('copyBtn');
+
+                errorPanel.classList.remove('visible');
+                errorText.textContent = '';
+                copyBtn.classList.remove('copied');
+                document.getElementById('copyText').textContent = 'Copy';
+                document.getElementById('copyIcon').textContent = '📋';
+
+                try {
+                    const choice = document.querySelector('input[name="mode"]:checked').value;
+                    const key = document.getElementById('encryptionKey').value.trim();
+                    const textInput = document.getElementById('textInput').value.trim();
+
+                    if (!key) throw new Error("Please enter a key.");
+                    if (!textInput && choice === '1') throw new Error("Please enter text to encrypt.");
+                    if (!textInput && choice === '2') throw new Error("Please paste your encrypted emojis.");
+
+                    const result = window.convertMatlabLogic(choice, key, textInput);
+
+                    outputLabel.textContent = (choice === '1') ? "Encrypted Output" : "Decrypted Output";
+                    outputDisplay.textContent = result;
+
+                } catch (error) {
+                    console.error("Cipher Error:", error);
+                    errorText.textContent = error.message;
+                    errorPanel.classList.add('visible');
+                    outputDisplay.textContent = 'Failed — see error below.';
+                    outputLabel.textContent = "Output";
+                }
+            }
+
+            window.updateLabel = function () {
+                const isEncrypt = document.getElementById('modeEncrypt').checked;
+                const label = document.getElementById('textInputLabel');
+                const input = document.getElementById('textInput');
+                const outputLabel = document.getElementById('outputLabel');
+                const outputDisplay = document.getElementById('output-display');
+
+                // Reset fields on mode switch
+                input.value = '';
+                document.getElementById('encryptionKey').value = '';
+                outputDisplay.textContent = 'Your result will appear here.';
+                outputLabel.textContent = 'Output';
+
+                // Hide any existing error
+                document.getElementById('error-message').classList.remove('visible');
+
+                if (isEncrypt) {
+                    label.textContent = "Message";
+                    input.placeholder = "Enter text to encrypt…";
+                } else {
+                    label.textContent = "Cipher Text";
+                    input.placeholder = "Paste your encrypted emojis here…";
+                }
+            }
+
+            window.copyOutput = function () {
+                const outputDisplay = document.getElementById('output-display');
+                const copyBtn = document.getElementById('copyBtn');
+                const copyText = document.getElementById('copyText');
+                const copyIcon = document.getElementById('copyIcon');
+
+                const text = outputDisplay.textContent;
+                if (!text || text === 'Your result will appear here.' || text.startsWith('Failed')) return;
+
+                navigator.clipboard.writeText(text).then(() => {
+                    copyBtn.classList.add('copied');
+                    copyText.textContent = 'Copied!';
+                    copyIcon.textContent = '✓';
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        copyText.textContent = 'Copy';
+                        copyIcon.textContent = '📋';
+                    }, 2000);
+                }).catch(() => {
+                    const range = document.createRange();
+                    range.selectNodeContents(outputDisplay);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    document.execCommand('copy');
+                    sel.removeAllRanges();
+                    copyText.textContent = 'Copied!';
+                    setTimeout(() => { copyText.textContent = 'Copy'; }, 2000);
+                });
+            }
+
+            window.onload = () => {
+                populateSupportedChars();
+                window.updateLabel();
+            };
+        })();
+    </script>
+</body>
+
+</html>
