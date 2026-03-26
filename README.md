@@ -25,7 +25,7 @@ Emoji Cipher takes your text, runs it through **two layers of classical encrypti
    git clone https://github.com/YOUR-USERNAME/emoji-cipher.git
    ```
 
-2. **Open `infosec.html`** in any browser. That's it. No server, no npm, no build step.
+2. **Open `index.html`** in any browser. That's it. No server, no npm, no build step.
 
 3. **Encrypt:** Type your message → enter a secret key → hit Execute → copy the emojis.
 
